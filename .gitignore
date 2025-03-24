@@ -1,0 +1,6 @@
+# IntelliJ
+.idea/
+
+# mysql data
+./db/mysql-replication/mysql-primary/data
+./db/mysql-replication/mysql-secondary/data
