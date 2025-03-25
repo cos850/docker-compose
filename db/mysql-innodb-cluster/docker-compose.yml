@@ -1,0 +1,99 @@
+services:
+  mysql-primary:
+    restart: unless-stopped
+    image: mysql:8.0.40
+    container_name: mysql-primary
+    hostname: mysql-primary
+    env_file:
+      - mysql/env/mysql-server.env
+    ports:
+      - "3301:3306"
+    volumes:
+      - ./mysql/data/mysql-primary:/var/lib/mysql
+    networks:
+      - bridge-network
+    command:
+      - "--server_id=1"
+      - "--gtid_mode=ON"
+      - "--enforce_gtid_consistency=ON"
+#      - "--loose-group_replication_start_on_boot=ON"
+#      - "--loose-group_replication_bootstrap_group=ON"
+      - "--loose-group_replication_local_address=mysql-primary:33061"
+      - "--loose-group_replication_group_seeds=mysql-primary:33061,mysql-secondary-1:33061,mysql-secondary-2:33061"
+
+  mysql-secondary-1:
+    restart: unless-stopped
+    container_name: mysql-secondary-1
+    hostname: mysql-secondary-1
+    env_file:
+      - mysql/env/mysql-server.env
+    image: mysql:8.0.40
+    ports:
+      - "3302:3306"
+    volumes:
+      - ./mysql/data/mysql-secondary-1:/var/lib/mysql
+    networks:
+      - bridge-network
+    command:
+      - "--server_id=2"
+      - "--gtid_mode=ON"
+      - "--enforce_gtid_consistency=ON"
+#      - "--loose-group_replication_start_on_boot=ON"
+#      - "--loose-group_replication_bootstrap_group=OFF"
+      - "--loose-group_replication_local_address=mysql-secondary-1:33061"
+      - "--loose-group_replication_group_seeds=mysql-primary:33061,mysql-secondary-1:33061,mysql-secondary-2:33061"
+
+  mysql-secondary-2:
+    restart: unless-stopped
+    container_name: mysql-secondary-2
+    hostname: mysql-secondary-2
+    env_file:
+      - mysql/env/mysql-server.env
+    image: mysql:8.0.40
+    ports:
+      - "3303:3306"
+    volumes:
+      - ./mysql/data/mysql-secondary-2:/var/lib/mysql
+    networks:
+      - bridge-network
+    command:
+      - "--server_id=3"
+      - "--gtid_mode=ON"
+      - "--enforce_gtid_consistency=ON"
+#      - "--loose-group_replication_start_on_boot=ON"
+#      - "--loose-group_replication_bootstrap_group=OFF"
+      - "--loose-group_replication_local_address=mysql-secondary-2:33061"
+      - "--loose-group_replication_group_seeds=mysql-primary:33061,mysql-secondary-1:33061,mysql-secondary-2:33061"
+
+#  mysql-shell:
+#    env_file:
+#      - ./mysql/env/mysql-shell.env
+#    image: neumayer/mysql-shell-batch
+#    volumes:
+#      - ./mysql-shell/scripts/:/scripts/
+#    depends_on:
+#      - mysql-primary
+#      - mysql-secondary-1
+#      - mysql-secondary-2
+
+  mysql-router:
+    restart: unless-stopped
+    container_name: mysql-router
+    image: mysql/mysql-router:8.0
+    env_file:
+      - mysql/env/mysql-router.env
+    networks:
+      - bridge-network
+#    volumes:
+#      - ./mysql-router:/etc/mysqlrouter
+    ports:
+      - "6446:6446"
+      - "6447:6447"
+    depends_on:
+      - mysql-primary
+      - mysql-secondary-1
+      - mysql-secondary-2
+
+networks:
+  bridge-network:
+    driver: bridge
